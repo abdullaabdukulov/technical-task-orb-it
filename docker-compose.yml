@@ -1,0 +1,70 @@
+services:
+  api: &main_app
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: coffee_shop:${COFFEE_SHOP_VERSION:-latest}
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      COFFEE_SHOP_HOST: 0.0.0.0
+      COFFEE_SHOP_DB_HOST: coffee_shop-db
+      COFFEE_SHOP_DB_PORT: 5432
+      COFFEE_SHOP_DB_USER: coffee_shop
+      COFFEE_SHOP_DB_PASS: coffee_shop
+      COFFEE_SHOP_DB_BASE: coffee_shop
+      COFFEE_SHOP_REDIS_HOST: coffee_shop-redis
+
+  db:
+    image: postgres:16.3-bullseye
+    hostname: coffee_shop-db
+    environment:
+      POSTGRES_PASSWORD: "coffee_shop"
+      POSTGRES_USER: "coffee_shop"
+      POSTGRES_DB: "coffee_shop"
+    volumes:
+      - coffee_shop-db-data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: pg_isready -U coffee_shop
+      interval: 2s
+      timeout: 3s
+      retries: 40
+
+  migrator:
+    image: coffee_shop:${COFFEE_SHOP_VERSION:-latest}
+    restart: "no"
+    command: alembic upgrade head
+    environment:
+      COFFEE_SHOP_DB_HOST: coffee_shop-db
+      COFFEE_SHOP_DB_PORT: 5432
+      COFFEE_SHOP_DB_USER: coffee_shop
+      COFFEE_SHOP_DB_PASS: coffee_shop
+      COFFEE_SHOP_DB_BASE: coffee_shop
+    depends_on:
+      db:
+        condition: service_healthy
+
+  redis:
+    image: bitnami/redis:6.2.5
+    hostname: "coffee_shop-redis"
+    restart: always
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    healthcheck:
+      test: redis-cli ping
+      interval: 1s
+      timeout: 3s
+      retries: 50
+
+
+
+volumes:
+  coffee_shop-db-data:
+    name: coffee_shop-db-data
