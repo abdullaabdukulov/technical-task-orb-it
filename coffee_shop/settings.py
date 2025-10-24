@@ -62,6 +62,14 @@ class Settings(BaseSettings):
     redis_pass: Optional[str] = None
     redis_base: Optional[int] = None
 
+    # === SMTP ===
+    smtp_host: str
+    smtp_port: int
+    smtp_user: str
+    smtp_password: str
+    smtp_use_tls: bool = True
+    smtp_from: str
+
     # This variable is used to define
     # multiproc_dir. It's required for [uvi|guni]corn projects.
     prometheus_dir: Path = TEMP_DIR / "prom"

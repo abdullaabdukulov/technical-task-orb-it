@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi_users import schemas
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 
 class UserRead(schemas.BaseUser[uuid.UUID]):
@@ -27,3 +27,8 @@ class LoginResponse(Token):
 
 class RefreshResponse(Token):
     pass
+
+
+class VerifyRequest(BaseModel):
+    email: EmailStr
+    code: str

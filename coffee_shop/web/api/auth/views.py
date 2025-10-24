@@ -2,11 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_users.exceptions import UserAlreadyExists
 
+from coffee_shop.services.auth.otp import OTPService
 from coffee_shop.web.api.auth.dependencies import (
+    UserManager,
     access_backend,
     api_users,
     current_active_user,
     current_refresh_user,
+    get_otp_service,
+    get_user_manager,
     refresh_backend,
 )
 from coffee_shop.web.api.auth.schemas import (
@@ -14,6 +18,7 @@ from coffee_shop.web.api.auth.schemas import (
     RefreshResponse,
     UserCreate,
     UserRead,
+    VerifyRequest,
 )
 
 router = APIRouter(tags=["auth"], prefix="/auth")
@@ -21,7 +26,8 @@ router = APIRouter(tags=["auth"], prefix="/auth")
 
 @router.post("/signup", response_model=UserRead)
 async def signup(
-    user_create: UserCreate, user_manager=Depends(api_users.get_user_manager),
+    user_create: UserCreate,
+    user_manager=Depends(api_users.get_user_manager),
 ):
     try:
         user = await user_manager.create(user_create, safe=True)
@@ -63,3 +69,20 @@ async def refresh(current_user=Depends(current_refresh_user)):
 @router.get("/protected", response_model=UserRead)
 async def protected_route(user: UserRead = Depends(current_active_user)):
     return user
+
+
+@router.post("/verify")
+async def verify_email(
+    data: VerifyRequest,
+    otp_service: OTPService = Depends(get_otp_service),
+    user_manager: UserManager = Depends(get_user_manager),
+):
+    verified = await otp_service.verify_otp(f"user:otp:{data.email}", data.code)
+    if not verified:
+        raise HTTPException(status_code=400, detail="Invalid or expired code")
+
+    user = await user_manager.mark_user_verified(data.email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {"status": "verified"}
