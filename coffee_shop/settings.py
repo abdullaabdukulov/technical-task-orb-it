@@ -1,5 +1,6 @@
 import enum
 import os
+from datetime import timedelta
 from pathlib import Path
 from tempfile import gettempdir
 from typing import Optional
@@ -40,7 +41,7 @@ class Settings(BaseSettings):
     environment: str = "dev"
 
     log_level: LogLevel = LogLevel.INFO
-    users_secret: str = os.getenv("USERS_SECRET", "")
+
     # Variables for the database
     db_host: str = "localhost"
     db_port: int = 5432
@@ -48,6 +49,11 @@ class Settings(BaseSettings):
     db_pass: str = "coffee_shop"
     db_base: str = "admin"
     db_echo: bool = False
+
+    # JWT settings
+    users_secret: str = os.getenv("USERS_SECRET", "")
+    access_token_lifetime: int = int(timedelta(days=1).total_seconds())
+    refresh_token_lifetime: int = int(timedelta(days=30).total_seconds())
 
     # Variables for Redis
     redis_host: str = "coffee_shop-redis"

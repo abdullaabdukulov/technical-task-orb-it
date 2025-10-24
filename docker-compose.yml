@@ -52,7 +52,7 @@ services:
         condition: service_healthy
 
   redis:
-    image: bitnami/redis:6.2.5
+    image: bitnami/redis:latest
     hostname: "coffee_shop-redis"
     restart: always
     environment:
